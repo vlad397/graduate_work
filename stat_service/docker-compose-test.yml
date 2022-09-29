@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  stat_service_tests:
+    build:
+      context: .
+      dockerfile: ./tests/Dockerfile
+    container_name: stat_service_tests
+    volumes:
+      - ./tests/:/usr/app/
+    depends_on:
+      - stat_service
+
+
+  stat_service:
+    build:
+      context: .
+      dockerfile: ./src/Dockerfile
+    container_name: backend
+    volumes:
+      - ./src/:/usr/app/

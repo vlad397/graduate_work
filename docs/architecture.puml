@@ -1,0 +1,57 @@
+@startuml
+!include <logos/flask>
+!include <logos/django>
+!include <logos/nginx>
+!include <logos/postgresql>
+
+
+
+"Client"
+rectangle "<$postgresql>" as  FilmDB
+package web-server {
+    rectangle "<$nginx>" as NGINX
+}
+
+package FilmAdmin {
+    rectangle "<$django>" as DjangoAdmin
+}
+
+package StatService {
+    [StatServiceApi]
+}
+
+package  Auth {
+     rectangle "<$flask>api" as AuthApi
+     rectangle "<$postgresql>" as  PgUserDB
+}
+package ETL {
+    [TrasferSVC]
+}
+package UGC {
+    [UGCApi]
+    [ClickHouse]
+}
+
+package Lk {
+    [LkApi]
+    }
+
+package ML {
+    [RecommendationApi]
+    [Qdrant]
+    [EmbeddingsETL]
+    }
+
+
+'------------Связи ---------------
+[Client] --> [NGINX]: Идем смотреть фильм
+[NGINX] --> [LkApi]:Идем смотреть фильм
+[LkApi] ---> [AuthApi]: есть такой юзер? Пустить
+[LkApi] -->[StatServiceApi]: Что бы посмотреть?
+[StatServiceApi]--> [ClickHouse]: Что юзер оценил?
+[StatServiceApi] -->[RecommendationApi]: Что бы посмотреть?
+[DjangoAdmin]-->[FilmDB]: администрируем фильмы
+ETL -->[FilmDB]: перегоняем датку из разных истоничков
+[EmbeddingsETL] --> [FilmDB]: Сделаем эмбеддинги
+'--------- Раскраска ------------
+@enduml

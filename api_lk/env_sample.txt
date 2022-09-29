@@ -1,0 +1,12 @@
+STAT_BASE_URL=http://nginx_stat_service:81/
+STAT_BEST_FILM_ENDPOINT=api/v1/stat/best_films/
+STAT_LAST_VIEWED_ENDPOINT=api/v1/stat/film_last_view/
+STAT_FAV_GENRES_ENDPOINT=api/v1/stat/genre_last_view/
+FILM_BASE_URL=http://film_api:8003/
+FILM_ENDPOINT=api/v1/films/
+REC_BASE_URL=http://recommendation_api:8080/
+REC_FILMS_ENDPOINT=api/v1/recommendation/film-personal-top/
+DEBUG=True
+JWT_ALGORITHM=
+SECRET_KEY=
+TEST=True

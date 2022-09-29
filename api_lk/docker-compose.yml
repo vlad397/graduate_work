@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+  lk_service:
+    build:
+      context: .
+      dockerfile: ./src/Dockerfile
+    container_name: lk_service
+    volumes:
+      - ./src/:/usr/app/
+      - static_files:/usr/app/staticfiles
+    ports:
+      - '8002:8002'
+    networks:
+      - common-network
+
+  nginx_lk_service:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    container_name: nginx_lk_service
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/site.conf:/etc/nginx/conf.d/site.conf:ro
+      - static_files:/home/app/staticfiles
+    depends_on:
+      - lk_service
+    ports:
+      - '82:82'
+    networks:
+      - common-network
+
+networks:
+  common-network:
+    external:
+      name: stat_service_common-network
+
+volumes:
+  static_files:

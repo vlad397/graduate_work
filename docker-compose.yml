@@ -1,0 +1,234 @@
+version: '3.8'
+
+x-function: &function
+  env_file:
+    - ugc/ugc_api/.env
+  depends_on:
+      kafka:
+        condition: service_healthy
+
+
+services:
+  qdrant:
+    image: qdrant/qdrant
+    expose:
+      - 6333
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  recommendation_api:
+    build:
+      context: recommendation/recommendation_api
+    env_file:
+      - recommendation/recommendation_api/.env
+
+  recommendation_etl:
+    build:
+      context: recommendation/recommendation_etl
+    env_file:
+      - recommendation/recommendation_etl/.env
+      - ./admin_panel/admin_panel/.env
+    expose:
+      - 8001
+
+  db:
+    image: postgres:12.4
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./admin_panel/admin_panel/.env
+    expose:
+      - 5432
+
+  admin:
+    build:
+      context: ./admin_panel/admin_panel/
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - ./admin_panel/admin_panel/.env
+    expose:
+      - 8001
+
+  redis_film:
+    image: redis:7.0.2
+    restart: always
+    command: --port 6380
+    expose:
+      - 6380
+
+  elasticsearch_film:
+    image: elasticsearch:7.17.3
+    expose:
+      - 9201
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms200m -Xmx200m
+      http.port: 9201
+
+  film_api:
+    build: ./film_api/fastapi-solution
+    expose:
+      - 8003
+    entrypoint: ["gunicorn", "main:app", "--workers", "4", "--worker-class",
+                 "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8003"]
+    env_file:
+      - ./film_api/fastapi-solution/.env
+    depends_on:
+      - elasticsearch_film
+      - redis_film
+  
+  api_lk:
+    build: ./api_lk/src
+    expose:
+      - 8002
+    entrypoint: ["gunicorn", "main:app", "--workers", "4", "--worker-class",
+                 "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8002"]
+    env_file:
+      - ./api_lk/.env
+
+  ugc_api:
+    build:
+      context: ugc/ugc_api
+      dockerfile: Dockerfile
+    volumes:
+      - ./ugc_api:/app
+    <<: *function
+
+  etl:
+    build:
+      context: ugc/etl
+      dockerfile: Dockerfile
+    volumes:
+      - ./etl:/app
+    <<: *function
+
+  nginx:
+    image: nginx:1.22.0
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/site_conf:/etc/nginx/conf.d:ro
+      - "logs_data:/var/log/nginx/"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ugc_api
+
+  redis:
+    image: "redis:7.0.2"
+    command: redis-server
+    expose:
+      - 6379
+
+  zookeeper:
+    image: 'bitnami/zookeeper:3.8.0'
+    expose:
+      - 2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - "zookeeper_data:/bitnami"
+    healthcheck:
+      test: nc -z localhost 2181 || exit 1
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  kafka:
+    build:
+      context: ugc/kafka
+      dockerfile: Dockerfile
+    hostname: kafka
+    expose:
+      - 21019
+      - 9092
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    volumes:
+      - "kafka_data:/bitnami"
+    healthcheck:
+      test: kafkacat -b localhost:9092 -L
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  mongo:
+    image: 'mongo:4.2.21'
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    expose:
+      - 27017
+
+  mongo-express:
+    image: 'mongo-express:1.0.0-alpha.4'
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+
+  elasticsearch:
+    image: elasticsearch:7.17.3
+    ports:
+      - '9200:9200'
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms200m -Xmx200m
+
+  kibana:
+    image: kibana:7.7.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  logstash:
+    image: logstash:7.10.1
+    environment:
+      ES_HOST: "elasticsearch:9200"
+    ports:
+      - "5044:5044/udp"
+    volumes:
+      - ./logging/logstash.conf:/config/logstash.conf:ro
+      - "logs_data:/var/log/nginx:ro"
+    command: logstash -f /config/logstash.conf
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.3.2
+    command: filebeat -e -strict.perms=false
+    volumes:
+      - "logs_data:/var/log/nginx:ro"
+      - ./logging/filebeat.yml:/usr/share/filebeat/filebeat.yml
+    depends_on:
+      - nginx
+      - logstash
+      - elasticsearch
+      - kibana
+    links:
+      - logstash
+
+volumes:
+  zookeeper_data:
+  kafka_data:
+  mongo_data:
+  logs_data:
+  qdrant_data:
+  postgres_data:

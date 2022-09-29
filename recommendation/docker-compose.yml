@@ -1,0 +1,71 @@
+version: '3.8'
+
+x-function: &function
+  env_file:
+    - ugc/ugc_api/.env.dev
+  depends_on:
+      kafka:
+        condition: service_healthy
+
+
+services:
+  qdrant:
+    image: qdrant/qdrant
+    expose:
+      - 6333
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  recommendation_api:
+    build:
+      context: recommendation_api
+    volumes:
+      - ./recommendation_api:/app
+    env_file:
+      - recommendation_api/.env.dev
+    depends_on:
+      - qdrant
+    expose:
+      - 8080
+    ports:
+      - 8089:8080
+
+  recommendation_etl:
+    build:
+      context: recommendation_etl
+    env_file:
+      - recommendation_etl/.env.dev
+    volumes:
+      - ./recommendation_etl:/app
+    depends_on:
+      - pg_db
+      - redis
+
+  pg_db:
+    image: postgres:13.0-alpine
+    volumes:
+      -  pg_db_data:/var/lib/postgresql/data/
+      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - DEBUG=${DEBUG}
+      - POSTGRES_DB=${DB_NAME}
+    expose:
+      - 5432
+
+  redis:
+    image: "redis:alpine"
+    command: redis-server --save 60 1
+#    volumes:
+#      - redis_data:/data
+    expose:
+      - 6379
+volumes:
+  pg_db_data:
+  zookeeper_data:
+  kafka_data:
+  mongo_data:
+  logs_data:
+  qdrant_data:
+  redis_data:

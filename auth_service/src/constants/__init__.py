@@ -1,0 +1,3 @@
+BROWSERS = ['Mozilla', 'AppleWebKit', 'Chrome', 'Safari']
+UNKNOWN_BROWSER_PLACEHOLDER = 'Unknown'
+NO_PASSWORD_PLACEHOLDER = 'MUST_CHANGE_PASSWORD'

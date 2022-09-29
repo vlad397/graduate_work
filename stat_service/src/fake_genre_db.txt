@@ -1,0 +1,12 @@
+id|name
+bb42581a-7dd9-432d-b184-3e013e8f7b91|Action
+b5339c87-7136-4e1f-a8c9-70f9a1acea0c|Horror
+df643a40-f3e9-4c33-b8b3-6e167e4b0d68|Drama
+80e173b8-c100-4e44-9159-f06fb31829b3|Western
+50791f5d-49c3-46f9-88a4-94bead629b25|Adventure
+0e1d830f-0fb1-4446-915c-b97437f8fb97|Documentary
+91ad85bb-b446-4650-b180-61cbbd91eab7|Comedy
+0c9906ca-d52b-441f-81bc-e9d853707fa8|Animation
+086138b6-adf5-4d37-b462-88535752e04d|Thriller
+8fe7e247-5db9-4878-980a-b382fdc64dfa|Fantasy
+8f239068-4649-45b7-a1dd-4fc105c4bbfb|Science

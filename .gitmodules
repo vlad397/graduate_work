@@ -1,0 +1,9 @@
+[submodule "ugc"]
+	path = ugc
+	url = git@github.com:Chelovek760/ugc_sprint_2_g.git
+[submodule "admin_panel"]
+	path = admin_panel
+	url = https://github.com/vlad397/admin_panel.git
+[submodule "film_api"]
+	path = film_api
+	url = git@github.com:vlad397/FastApi.git

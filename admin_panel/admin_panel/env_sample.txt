@@ -1,0 +1,9 @@
+DB_ENGINE=django.db.backends.postgresql
+POSTGRES_DB=movies_database
+POSTGRES_USER=app
+POSTGRES_PASSWORD=123qwe
+DB_HOST=db
+DB_PORT=5432
+SECRET_KEY=django-insecure-&3eskj%x^^n+xyna0i4-vm)-c(ghapu-yqtivl@^u__gx@7uz4
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,admin,localhost
